@@ -1,0 +1,13 @@
+{
+  "name": "chatbot",
+  "version": "1.0.0",
+  "description": "Um chatbot para WhatsApp",
+  "main": "chatbot.js",
+  "scripts": {
+    "start": "node chatbot.js"
+  },
+  "dependencies": {
+    "puppeteer-core": "^24.4.0",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
