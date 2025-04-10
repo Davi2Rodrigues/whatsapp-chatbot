@@ -1,127 +1,191 @@
+// ==================== CONFIGURAÇÃO INICIAL ====================
+require('dotenv').config();
+process.env.DISABLE_GPU = 'true';
+
+const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
-const venom = require('venom-bot');
+const fs = require('fs');
+const path = require('path');
 
-venom
-  .create({
-    session: 'session-name',
-    multidevice: true,
-    headless: false // Desativa o modo headless para depuração
-  })
-  .then((client) => {
-    console.log('Tudo certo! WhatsApp conectado.');
+// ===== CONFIGURAÇÕES =====
+const isProduction = process.env.NODE_ENV === 'production';
+const activeChats = new Set();
+let activeHumanChats = new Set();
+const INSTAGRAM_LINK = process.env.INSTAGRAM_URL || 'https://www.instagram.com/grsia.br/';
+const instagramMsg = `\n\nConheça nosso Instagram: ${INSTAGRAM_LINK}`;
+const ADMINS = process.env.ADMIN_NUMBERS 
+  ? process.env.ADMIN_NUMBERS.split(',').map(num => `${num.trim()}@c.us`)
+  : ['5511932010789@c.us'];
 
-    // Função para enviar mensagens com delay
-    const delay = ms => new Promise(res => setTimeout(res, ms));
+// ===== CONFIGURAÇÃO DO CLIENTE =====
+const client = new Client({
+  authStrategy: new LocalAuth({
+    dataPath: path.join(__dirname, 'wwebjs_auth'),
+    clientId: 'grsia-bot'
+  }),
+  puppeteer: {
+    headless: isProduction,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--no-first-run',
+      '--no-zygote',
+      '--disable-gpu',
+      '--single-process',
+      '--use-gl=swiftshader'
+    ],
+    timeout: 60000
+  },
+  webVersionCache: {
+    type: 'remote',
+    remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
+    strict: false
+  }
+});
 
-    // Função para enviar mensagens com simulação de digitação
-    async function sendMessageWithTyping(chatId, message, delayTime = 1000) {
-      await delay(delayTime);
-      await client.startTyping(chatId);
-      await delay(delayTime);
-      await client.sendText(chatId, message);
+// ===== FUNÇÕES PRINCIPAIS =====
+function isOfficeOpen() {
+  const now = new Date();
+  const day = now.getDay();
+  const hour = now.getHours();
+  return day >= 1 && day <= 5 && hour >= 9 && hour < 18;
+}
+
+function isAdmin(number) {
+  return ADMINS.includes(number);
+}
+
+async function handleGreeting(msg) {
+  const contact = await msg.getContact();
+  const name = contact.pushname || 'Cliente';
+  await client.sendMessage(
+    msg.from, 
+    `👋 Olá *${name.split(" ")[0]}*! Sou o assistente da *GRsia*.\n\n` +
+    `Escolha uma opção:\n\n` +
+    `1️⃣ - Falar com advogado\n` +
+    `2️⃣ - Agendar consulta\n` +
+    `3️⃣ - Dúvidas sobre processo\n` +
+    `4️⃣ - Outras perguntas`
+  );
+}
+
+async function handleMenuOptions(msg) {
+  const responses = {
+    '1': `⏳ Conectando você com um advogado. Por favor, envie sua dúvida diretamente e aguarde.`,
+    '2': `📅 Vou verificar os horários disponíveis e te retorno em breve.` + instagramMsg,
+    '3': `⚖️ Aguarde um momento enquanto conectamos você com um advogado. Envie suas dúvidas.`,
+    '4': `📌 Para outras informações: ${process.env.SITE_URL || 'https://grsia.com.br'}` + instagramMsg
+  };
+
+  const response = responses[msg.body] || 'Opção inválida. Digite "menu" para ajuda.';
+  await client.sendMessage(msg.from, response);
+
+  if (msg.body === '1' || msg.body === '3') {
+    activeHumanChats.add(msg.from);
+    await client.sendMessage(msg.from, 
+      'A partir de agora, você está em contato direto com nosso time. ' +
+      'Envie suas dúvidas e um advogado responderá em breve.'
+    );
+  }
+}
+
+async function handleAdminCommands(msg) {
+  const command = msg.body.toLowerCase().trim();
+  
+  if (command.startsWith('!finalizar ')) {
+    const number = command.split(' ')[1].replace(/\D/g, '') + '@c.us';
+    if (activeHumanChats.has(number)) {
+      activeHumanChats.delete(number);
+      await msg.reply(`✅ Atendimento finalizado para ${number}`);
+      await client.sendMessage(number, 'Atendimento encerrado. Digite "menu" para novas opções.');
+    }
+    return true;
+  }
+  
+  if (command === '!status') {
+    await msg.reply(activeHumanChats.size > 0 
+      ? `📊 Atendimentos ativos: ${activeHumanChats.size}\n${[...activeHumanChats].join('\n')}`
+      : '✅ Todos os chats em modo automático'
+    );
+    return true;
+  }
+  
+  return false;
+}
+
+// ===== EVENTOS =====
+client.on('qr', qr => {
+  console.log('🔑 QR Code para autenticação:');
+  qrcode.generate(qr, { small: true });
+});
+
+client.on('ready', () => {
+  console.log('🚀 Bot pronto para operação');
+});
+
+client.on('disconnected', (reason) => {
+  console.log(`⚠️ Desconectado: ${reason}`);
+  console.log('Reconectando...');
+  client.initialize();
+});
+
+client.on('message', async msg => {
+  try {
+    if (msg.fromMe || msg.isGroupMsg) return;
+
+    // Bloqueio de áudios
+    if (msg.hasMedia) {
+      await client.sendMessage(msg.from, '⚠️ Por favor, envie apenas mensagens escritas. Áudios não são suportados.');
+      return;
     }
 
-    // Função para verificar se está dentro do horário de atendimento
-    function isOfficeOpen() {
-      const now = new Date();
-      const dayOfWeek = now.getDay(); // 0 (Domingo) a 6 (Sábado)
-      const hour = now.getHours();
-      const minute = now.getMinutes();
+    // Comandos admin
+    if (isAdmin(msg.from) && await handleAdminCommands(msg)) return;
 
-      // Verifica se é dia útil (segunda a sexta) e horário comercial (09:00 às 18:00)
-      return dayOfWeek >= 1 && dayOfWeek <= 5 && // Segunda (1) a Sexta (5)
-             (hour > 9 || (hour === 9 && minute >= 0)) && // Após 09:00
-             (hour < 18 || (hour === 18 && minute === 0)); // Antes das 18:00
+    // Atendimento humano
+    if (activeHumanChats.has(msg.from)) {
+      console.log(`💬 [ATENDIMENTO] ${msg.from}: ${msg.body}`);
+      return;
     }
 
-    // Função para responder a saudações
-    async function handleGreeting(msg) {
-      console.log('Função handleGreeting chamada');
-      const contact = await client.getContact(msg.from);
-      const name = contact.pushname || contact.name || 'Cliente';
-
-      await sendMessageWithTyping(
-        msg.from,
-        `👋 Olá, *${name.split(" ")[0]}*! Sou o assistente virtual da empresa *GRsia*. Como posso ajudá-lo hoje? Por favor, digite uma das opções abaixo:\n\n` +
-        `1️⃣ - Quero falar com um advogado.\n` +
-        `2️⃣ - Agendar consulta.\n` +
-        `3️⃣ - Dúvidas sobre meu processo.\n` +
-        `4️⃣ - Outras perguntas.`
+    // Fluxo automático
+    if (!isOfficeOpen()) {
+      await client.sendMessage(msg.from, 
+        '📅 Fora do horário de atendimento.\n\n' +
+        'Funcionamos de seg a sex, das 09:00 às 18:00. ' +
+        'Por favor, retorne em horário comercial. 😊' + instagramMsg
       );
+      return;
     }
 
-    // Função para responder a agradecimentos
-    async function handleThanks(msg) {
-      console.log('Função handleThanks chamada');
-      await client.sendText(msg.from, 'De nada! Estou aqui para ajudar. 😊');
+    const text = msg.body.toLowerCase().trim();
+
+    if (/^(menu|Menu|dia|tarde|noite|oi|Oi|Olá|olá|ola|Ola)/i.test(text)) {
+      await handleGreeting(msg);
+    } 
+    else if (/^[1-4]$/.test(text)) {
+      await handleMenuOptions(msg);
     }
-
-    // Função para processar opções do menu
-    async function handleMenuOptions(msg) {
-      console.log('Função handleMenuOptions chamada');
-      switch (msg.body) {
-        case '1':
-          await sendMessageWithTyping(msg.from, 'Ótimo! Vamos encaminhar a conversa para um de nossos atendentes.\n\nAguarde por gentileza.');
-          await sendMessageWithTyping(msg.from, 'Já conhece a nossa página oficial no instagram? Se não conhece, venha dar uma olhada! https://www.instagram.com/grsia.br/');
-          break;
-
-        case '2':
-          await sendMessageWithTyping(msg.from, 'Perfeito!\nVou dar uma olhada em nossa agenda e já te retorno sobre os horários e advogados disponíveis.\n');
-          await sendMessageWithTyping(msg.from, 'Já conhece a nossa página oficial no instagram? Se não conhece, venha dar uma olhada! https://www.instagram.com/grsia.br/');
-          break;
-
-        case '3':
-          await sendMessageWithTyping(msg.from, 'Entendi! Aguarde um momento para falar com um de nossos advogados e consultar o status de seu processo.\n');
-          await sendMessageWithTyping(msg.from, 'Já conhece a nossa página oficial no instagram? Se não conhece, venha dar uma olhada! https://www.instagram.com/grsia.br/');
-          break;
-
-        case '4':
-          await sendMessageWithTyping(msg.from, 'Se você tiver outras dúvidas ou precisar de mais informações, por favor, fale aqui nesse WhatsApp ou visite nosso site: https://grsia.com.br');
-          break;
-
-        default:
-          await sendMessageWithTyping(msg.from, 'Desculpe, não entendi. Por favor, escolha uma das opções válidas.');
-          break;
-      }
+    else if (/(obrigado|obrigada|valeu|agradeço|grato|grata)/i.test(text)) {
+      await client.sendMessage(msg.from, '😊 Disponha! Estamos à disposição!' + instagramMsg);
     }
+    else {
+      await client.sendMessage(msg.from, 'Digite "menu" para ver as opções disponíveis.');
+    }
+  } catch (error) {
+    console.error('Erro:', error);
+  }
+});
 
-    // Funil de mensagens
-    client.onMessage(async (msg) => {
-      try {
-        console.log('Evento onMessage acionado:', msg.body);
+// ===== INICIALIZAÇÃO =====
+console.log('🔄 Iniciando bot GRsia...');
+client.initialize();
 
-        // Verifica se está dentro do horário de atendimento
-        if (!isOfficeOpen()) {
-          await client.sendText(msg.from, '📅 Fora do horário de atendimento.\n\nNosso escritório funciona de segunda a sexta, das 09:00 às 18:00 (horário de Brasília). Por favor, retorne em um horário comercial. 😊');
-          return;
-        }
-
-        // Verifica se a mensagem é um áudio
-        if (msg.isMedia || msg.isMMS) {
-          await client.sendText(msg.from, 'Por favor, envie apenas mensagens escritas. Áudios não são suportados.');
-          return;
-        }
-
-        // Verifica se a mensagem é uma saudação inicial
-        if (msg.body.match(/(menu|Menu|dia|tarde|noite|oi|Oi|Olá|olá|ola|Ola)/i)) {
-          await handleGreeting(msg);
-          return;
-        }
-
-        // Verifica se a mensagem é de agradecimento
-        if (msg.body.match(/(obrigado|obrigada|valeu|agradeço|grato|grata)/i)) {
-          await handleThanks(msg);
-          return;
-        }
-
-        // Verifica se a mensagem é uma das opções válidas
-        await handleMenuOptions(msg);
-      } catch (error) {
-        console.error('Erro ao processar mensagem:', error);
-        await client.sendText(msg.from, 'Ops! Ocorreu um erro. Por favor, tente novamente mais tarde.');
-      }
-    });
-  })
-  .catch((erro) => {
-    console.error('Erro ao iniciar o bot:', erro);
-  });
+// ===== ENCERRAMENTO =====
+process.on('SIGINT', async () => {
+  console.log('\n🛑 Encerrando bot...');
+  await client.destroy();
+  process.exit(0);
+});

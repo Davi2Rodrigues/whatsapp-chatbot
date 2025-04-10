@@ -1,0 +1,16 @@
+2025/04/10-15:53:34.231 151c Reusing MANIFEST C:\Users\glice\chatbot-filtrado\wwebjs_auth\session-grsia-bot\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2025/04/10-15:53:34.231 151c Recovering log #62
+2025/04/10-15:53:34.234 151c Reusing old log C:\Users\glice\chatbot-filtrado\wwebjs_auth\session-grsia-bot\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/000062.log 
+2025/04/10-15:53:35.912 eec Level-0 table #69: started
+2025/04/10-15:53:35.930 eec Level-0 table #69: 23289 bytes OK
+2025/04/10-15:53:35.961 eec Delete type=0 #62
+2025/04/10-15:53:35.961 eec Manual compaction at level-0 from '\x00\x1b\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x1c\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/04/10-15:53:37.893 1924 Compacting 1@1 + 3@2 files
+2025/04/10-15:53:38.119 1924 Generated table #70@1: 33862 keys, 2194413 bytes
+2025/04/10-15:53:38.289 1924 Generated table #71@1: 33526 keys, 899325 bytes
+2025/04/10-15:53:38.289 1924 Compacted 1@1 + 3@2 files => 3093738 bytes
+2025/04/10-15:53:38.326 1924 compacted to: files[ 0 0 2 0 0 0 0 ]
+2025/04/10-15:53:38.326 1924 Delete type=2 #59
+2025/04/10-15:53:38.326 1924 Delete type=2 #65
+2025/04/10-15:53:38.326 1924 Delete type=2 #66
+2025/04/10-15:53:38.326 1924 Delete type=2 #69

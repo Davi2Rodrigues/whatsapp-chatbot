@@ -1,0 +1,101 @@
+[2025-04-01T19:04:53.958Z] [INFO] Navegador detectado: C:\Program Files\Google\Chrome\Application\chrome.exe
+[2025-04-01T19:05:00.148Z] [ERROR] Falha na inicialização: Error: webVersionCache.remotePath is required when using the remote cache
+[2025-04-01T19:27:42.729Z] [INFO] Navegador detectado: C:\Program Files\Google\Chrome\Application\chrome.exe
+[2025-04-01T19:27:53.901Z] [INFO] ✅ Bot conectado e pronto!
+[2025-04-01T19:27:55.552Z] [ERROR] Erro: TypeError: client.sendPresenceUpdate is not a function
+    at sendMessageWithTyping (C:\Users\glice\chatbot-filtrado\chatbot.js:42:16)
+    at async Client.<anonymous> (C:\Users\glice\chatbot-filtrado\chatbot.js:159:7)
+[2025-04-01T19:31:21.008Z] [ERROR] Erro: TypeError: client.sendPresenceUpdate is not a function
+    at sendMessageWithTyping (C:\Users\glice\chatbot-filtrado\chatbot.js:42:16)
+    at async Client.<anonymous> (C:\Users\glice\chatbot-filtrado\chatbot.js:150:7)
+[2025-04-01T19:31:29.023Z] [ERROR] Erro: TypeError: client.sendPresenceUpdate is not a function
+    at sendMessageWithTyping (C:\Users\glice\chatbot-filtrado\chatbot.js:42:16)
+    at async Client.<anonymous> (C:\Users\glice\chatbot-filtrado\chatbot.js:150:7)
+[2025-04-01T19:32:53.909Z] [INFO] Uso de memória: 22MB
+[2025-04-01T19:37:53.920Z] [INFO] Uso de memória: 22MB
+[2025-04-01T19:38:28.866Z] [INFO] Navegador detectado: C:\Program Files\Google\Chrome\Application\chrome.exe
+[2025-04-01T19:38:33.798Z] [INFO] ✅ Bot conectado e pronto!
+[2025-04-01T20:04:03.303Z] [INFO] Navegador detectado: C:\Program Files\Google\Chrome\Application\chrome.exe
+[2025-04-01T20:04:07.309Z] [INFO] ✅ Bot conectado com sucesso!
+[2025-04-01T20:20:52.086Z] [INFO] Navegador detectado: C:\Program Files\Google\Chrome\Application\chrome.exe
+[2025-04-01T20:20:55.973Z] [INFO] ✅ Bot conectado com sucesso!
+[2025-04-01T20:38:39.779Z] [ERROR] Erro ao enviar mensagem: Error: Evaluation failed: Invalid chatstate
+[2025-04-01T20:38:47.282Z] [ERROR] Erro ao enviar mensagem: Error: Evaluation failed: Invalid chatstate
+[2025-04-01T20:38:52.319Z] [ERROR] Erro ao enviar mensagem: Error: Evaluation failed: Invalid chatstate
+[2025-04-01T20:38:56.509Z] [ERROR] Erro ao enviar mensagem: Error: Evaluation failed: Invalid chatstate
+[2025-04-01T20:39:18.155Z] [ERROR] Erro ao enviar mensagem: Error: Evaluation failed: Invalid chatstate
+[2025-04-01T20:39:38.450Z] [ERROR] Erro ao enviar mensagem: Error: Evaluation failed: Invalid chatstate
+[2025-04-01T20:40:15.908Z] [ERROR] Erro ao enviar mensagem: Error: Evaluation failed: Invalid chatstate
+[2025-04-01T20:40:55.809Z] [ERROR] Erro ao enviar mensagem: Error: Evaluation failed: Invalid chatstate
+[2025-04-01T20:43:13.391Z] [ERROR] Erro ao enviar mensagem: Error: Evaluation failed: Invalid chatstate
+[2025-04-01T20:50:47.714Z] [ERROR] Erro ao enviar mensagem: Error: Evaluation failed: Invalid chatstate
+[2025-04-01T20:58:21.874Z] [INFO] Navegador detectado: C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe
+[2025-04-01T20:58:25.830Z] [INFO] ✅ Bot conectado e pronto!
+[2025-04-01T20:58:25.832Z] [WARN] Erro ao simular digitação: Evaluation failed: Invalid chatstate
+[2025-04-01T20:58:25.842Z] [WARN] ERRO NÃO TRATADO: Evaluation failed: Invalid chatstate
+[2025-04-02T19:35:12.553Z] [INFO] Navegador detectado: C:\Program Files\Google\\Chrome\\Application\\chrome.exe
+[2025-04-02T19:35:31.310Z] [INFO] ✅ Bot conectado com sucesso!
+[2025-04-02T19:35:41.521Z] [WARN] Simulação de digitação falhou: Evaluation failed: TypeError: window.WWebJS.getChatById is not a function
+    at pptr://__puppeteer_evaluation_script__:2:40
+[2025-04-02T19:35:46.307Z] [WARN] Simulação de digitação falhou: Evaluation failed: TypeError: window.WWebJS.getChatById is not a function
+    at pptr://__puppeteer_evaluation_script__:2:40
+[2025-04-02T19:40:48.556Z] [INFO] Navegador detectado: C:\Program Files\Google\\Chrome\\Application\\chrome.exe
+[2025-04-02T19:40:56.337Z] [INFO] ✅ Bot conectado com sucesso!
+🧠 Uso de memória: 20MB
+🧠 Uso de memória: 16MB
+🧠 Uso de memória: 16MB
+🧠 Uso de memória: 20MB
+🧠 Uso de memória: 20MB
+🧠 Uso de memória: 21MB
+🧠 Uso de memória: 21MB
+🧠 Uso de memória: 21MB
+🧠 Uso de memória: 21MB
+🧠 Uso de memória: 21MB
+🧠 Uso de memória: 20MB
+🧠 Uso de memória: 20MB
+🧠 Uso de memória: 20MB
+🧠 Uso de memória: 20MB
+🧠 Uso de memória: 20MB
+🧠 Uso de memória: 20MB
+🧠 Uso de memória: 20MB
+🧠 Uso de memória: 20MB
+🧠 Uso de memória: 20MB
+🧠 Uso de memória: 20MB
+🧠 Uso de memória: 20MB
+🧠 Uso de memória: 16MB
+🧠 Uso de memória: 20MB
+🧠 Uso de memória: 20MB
+🧠 Uso de memória: 20MB
+🧠 Uso de memória: 20MB
+🧠 Uso de memória: 20MB
+🧠 Uso de memória: 20MB
+🧠 Uso de memória: 20MB
+🧠 Uso de memória: 20MB
+🧠 Uso de memória: 21MB
+🧠 Uso de memória: 17MB
+🧠 Uso de memória: 17MB
+🧠 Uso de memória: 17MB
+🧠 Uso de memória: 17MB
+🧠 Uso de memória: 17MB
+🧠 Uso de memória: 17MB
+🧠 Uso de memória: 16MB
+🧠 Uso de memória: 15MB
+🧠 Uso de memória: 16MB
+🧠 Uso de memória: 16MB
+🧠 Uso de memória: 16MB
+🧠 Uso de memória: 16MB
+🧠 Uso de memória: 16MB
+🧠 Uso de memória: 16MB
+🧠 Uso de memória: 16MB
+🧠 Uso de memória: 16MB
+🧠 Uso de memória: 16MB
+🧠 Uso de memória: 16MB
+🧠 Uso de memória: 16MB
+🧠 Uso de memória: 16MB
+[2025-04-07T20:16:20.694Z] Atendimento humano ativado
+[2025-04-07T20:26:55.119Z] Atendimento humano ativado
+[2025-04-07T20:28:39.538Z] Atendimento cancelado manualmente
+🧠 Uso de memória: 22MB
+🧠 Uso de memória: 22MB
+🧠 Uso de memória: 21MB
+🧠 Uso de memória: 22MB
