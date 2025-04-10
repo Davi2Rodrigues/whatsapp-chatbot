@@ -1,6 +1,6 @@
 // ==================== CONFIGURAÇÃO INICIAL ====================
 require('dotenv').config();
-process.env.DISABLE_GPU = 'true'; // Otimização para Railway
+process.env.DISABLE_GPU = 'true'; // Otimização para servidores
 
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
@@ -17,14 +17,14 @@ const ADMINS = process.env.ADMIN_NUMBERS
   ? process.env.ADMIN_NUMBERS.split(',').map(num => `${num.trim()}@c.us`)
   : ['5511932010789@c.us'];
 
-// ===== CONFIGURAÇÃO DO CLIENTE (ATUALIZADA PARA RAILWAY) =====
+// ===== CONFIGURAÇÃO ATUALIZADA DO CLIENTE =====
 const client = new Client({
   authStrategy: new LocalAuth({
     dataPath: path.join(__dirname, 'wwebjs_auth'),
     clientId: 'grsia-bot'
   }),
   puppeteer: {
-    headless: true, // FORÇADO para true (Railway não tem interface gráfica)
+    headless: 'new', // Modo headless moderno
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -32,14 +32,10 @@ const client = new Client({
       '--disable-accelerated-2d-canvas',
       '--no-first-run',
       '--no-zygote',
-      '--disable-gpu',
-      '--single-process',
-      '--use-gl=swiftshader'
+      '--disable-gpu'
     ],
-    executablePath: isProduction 
-      ? '/usr/bin/google-chrome' // Caminho no Railway
-      : undefined, // Usa Chrome local em desenvolvimento
-    timeout: 60000
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || // Prioriza variável de ambiente
+      (isProduction ? '/usr/bin/chromium-browser' : undefined) // Caminho no Railway
   },
   webVersionCache: {
     type: 'remote',
@@ -166,7 +162,7 @@ client.on('message', async msg => {
   try {
     if (msg.fromMe || msg.isGroupMsg) return;
 
-    // Bloqueio de áudios (ORIGINAL)
+    // Bloqueio de áudios
     if (msg.hasMedia) {
       await client.sendMessage(msg.from, '⚠️ Por favor, envie apenas mensagens escritas. Áudios não são suportados.');
       return;

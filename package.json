@@ -11,7 +11,7 @@
   "dependencies": {
     "chrome-paths": "^1.0.1",
     "dotenv": "^16.4.7",
-    "puppeteer": "^24.4.0",
+    "puppeteer": "^21.6.0",
     "qrcode-terminal": "^0.12.0",
     "whatsapp-web.js": "^1.24.0"
   },
