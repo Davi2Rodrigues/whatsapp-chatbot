@@ -1,6 +1,6 @@
 // ==================== CONFIGURAÇÃO INICIAL ====================
 require('dotenv').config();
-process.env.DISABLE_GPU = 'true';
+process.env.DISABLE_GPU = 'true'; // Otimização para Railway
 
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
@@ -17,14 +17,14 @@ const ADMINS = process.env.ADMIN_NUMBERS
   ? process.env.ADMIN_NUMBERS.split(',').map(num => `${num.trim()}@c.us`)
   : ['5511932010789@c.us'];
 
-// ===== CONFIGURAÇÃO DO CLIENTE =====
+// ===== CONFIGURAÇÃO DO CLIENTE (ATUALIZADA PARA RAILWAY) =====
 const client = new Client({
   authStrategy: new LocalAuth({
     dataPath: path.join(__dirname, 'wwebjs_auth'),
     clientId: 'grsia-bot'
   }),
   puppeteer: {
-    headless: isProduction,
+    headless: true, // FORÇADO para true (Railway não tem interface gráfica)
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -36,16 +36,46 @@ const client = new Client({
       '--single-process',
       '--use-gl=swiftshader'
     ],
+    executablePath: isProduction 
+      ? '/usr/bin/google-chrome' // Caminho no Railway
+      : undefined, // Usa Chrome local em desenvolvimento
     timeout: 60000
   },
   webVersionCache: {
     type: 'remote',
     remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
     strict: false
-  }
+  },
+  takeoverOnConflict: true,
+  takeoverTimeoutMs: 30000
 });
 
-// ===== FUNÇÕES PRINCIPAIS =====
+// ===== SISTEMA DE RECONEXÃO =====
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 5;
+
+async function safeInitialize() {
+  try {
+    console.log('🔧 Iniciando conexão...');
+    await client.initialize();
+    console.log('✅ Conexão estabelecida com sucesso');
+    reconnectAttempts = 0;
+  } catch (err) {
+    console.error(`❌ Falha na inicialização (${reconnectAttempts + 1}/${MAX_RECONNECT_ATTEMPTS}):`, err.message);
+    
+    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+      reconnectAttempts++;
+      const delayTime = Math.min(reconnectAttempts * 5000, 30000);
+      console.log(`⏳ Tentando reconectar em ${delayTime/1000} segundos...`);
+      setTimeout(safeInitialize, delayTime);
+    } else {
+      console.error('🚫 Número máximo de tentativas de reconexão atingido');
+      process.exit(1);
+    }
+  }
+}
+
+// ===== FUNÇÕES PRINCIPAIS (MANTIDAS ORIGINAIS) =====
 function isOfficeOpen() {
   const now = new Date();
   const day = now.getDay();
@@ -125,17 +155,18 @@ client.on('ready', () => {
   console.log('🚀 Bot pronto para operação');
 });
 
-client.on('disconnected', (reason) => {
+client.on('disconnected', async (reason) => {
   console.log(`⚠️ Desconectado: ${reason}`);
-  console.log('Reconectando...');
-  client.initialize();
+  console.log('Tentando reconectar...');
+  reconnectAttempts = 0;
+  await safeInitialize();
 });
 
 client.on('message', async msg => {
   try {
     if (msg.fromMe || msg.isGroupMsg) return;
 
-    // Bloqueio de áudios
+    // Bloqueio de áudios (ORIGINAL)
     if (msg.hasMedia) {
       await client.sendMessage(msg.from, '⚠️ Por favor, envie apenas mensagens escritas. Áudios não são suportados.');
       return;
@@ -181,11 +212,17 @@ client.on('message', async msg => {
 
 // ===== INICIALIZAÇÃO =====
 console.log('🔄 Iniciando bot GRsia...');
-client.initialize();
+safeInitialize();
 
 // ===== ENCERRAMENTO =====
 process.on('SIGINT', async () => {
   console.log('\n🛑 Encerrando bot...');
-  await client.destroy();
-  process.exit(0);
+  try {
+    await client.destroy();
+    console.log('✅ Conexão encerrada corretamente');
+    process.exit(0);
+  } catch (err) {
+    console.error('⚠️ Erro ao encerrar:', err);
+    process.exit(1);
+  }
 });
