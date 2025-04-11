@@ -3,30 +3,26 @@
   "version": "1.0.0",
   "main": "chatbot.js",
   "scripts": {
-    "start": "node chatbot.js",
+    "start": "NODE_ENV=production node chatbot.js",
+    "dev": "node chatbot.js",
     "fix-deps": "npm audit fix --force",
-    "prod": "pm2 start chatbot.js --name whatsapp-bot",
-    "monitor": "pm2 monit"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "chrome-paths": "^1.0.1",
-    "dotenv": "^16.4.7",
-    "puppeteer": "^21.6.0",
+    "dotenv": "^16.4.1",
     "qrcode-terminal": "^0.12.0",
     "whatsapp-web.js": "^1.24.0"
+  },
+  "optionalDependencies": {
+    "puppeteer": "^21.11.0"
   },
   "engines": {
     "node": ">=18.0.0"
   },
-  "description": "",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/davy7x/testechatbot.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/davy7x/testechatbot/issues"
   },
