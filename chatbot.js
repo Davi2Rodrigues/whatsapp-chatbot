@@ -24,7 +24,7 @@ const client = new Client({
     clientId: 'grsia-bot'
   }),
   puppeteer: {
-    headless: 'new', // Modo headless moderno
+    headless: true,
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -34,8 +34,8 @@ const client = new Client({
       '--no-zygote',
       '--disable-gpu'
     ],
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || // Prioriza variável de ambiente
-      (isProduction ? '/usr/bin/chromium-browser' : undefined) // Caminho no Railway
+    executablePath: process.env.CHROMIUM_PATH || 
+  (isProduction ? '/usr/bin/chromium-browser' : undefined)
   },
   webVersionCache: {
     type: 'remote',
