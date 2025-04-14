@@ -29,13 +29,15 @@ const client = new Client({
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
+      '--single-process', // Otimização para ambientes com poucos recursos (Railway)
       '--disable-accelerated-2d-canvas',
       '--no-first-run',
       '--no-zygote',
       '--disable-gpu'
     ],
-    executablePath: process.env.CHROMIUM_PATH || 
-  (isProduction ? '/usr/bin/chromium-browser' : undefined)
+    // Caminho padrão do Chromium no Railway + fallback para desenvolvimento local
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || 
+      (isProduction ? '/usr/bin/chromium' : undefined)
   },
   webVersionCache: {
     type: 'remote',
