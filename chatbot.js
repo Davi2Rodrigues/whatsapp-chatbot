@@ -1,11 +1,3 @@
-/// ==================== CONFIGURAÇÃO INICIAL ==================== 
-require('dotenv').config();
-process.env.DISABLE_GPU = 'true'; // Otimização para servidores
-
-const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
-const path = require('path');
-
 // ===== CONFIGURAÇÕES =====
 const isProduction = process.env.NODE_ENV === 'production';
 const activeChats = new Set();
@@ -15,6 +7,14 @@ const instagramMsg = `\n\nConheça nosso Instagram: ${INSTAGRAM_LINK}`;
 const ADMINS = process.env.ADMIN_NUMBERS 
   ? process.env.ADMIN_NUMBERS.split(',').map(num => `${num.trim()}@c.us`)
   : ['5511932010789@c.us'];
+
+// ==================== CONFIGURAÇÃO INICIAL ====================
+require('dotenv').config();
+process.env.DISABLE_GPU = 'true'; // Otimização para servidores
+
+const { Client, LocalAuth } = require('whatsapp-web.js');
+const qrcode = require('qrcode-terminal');
+const path = require('path');
 
 // ===== CONFIGURAÇÃO FORTIFICADA DO CLIENTE =====
 const client = new Client({
@@ -35,7 +35,7 @@ const client = new Client({
       '--no-zygote',
       '--disable-gpu'
     ],
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser',
     timeout: 60000 // Aumenta timeout para 60s
   },
   webVersionCache: {
@@ -73,6 +73,7 @@ async function safeInitialize() {
     }
   }
 }
+
 
 // ===== FUNÇÕES PRINCIPAIS (MANTIDAS ORIGINAIS) =====
 function isOfficeOpen() {
