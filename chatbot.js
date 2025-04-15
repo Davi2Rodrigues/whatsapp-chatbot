@@ -1,10 +1,9 @@
-// ==================== CONFIGURAÇÃO INICIAL ====================
+/// ==================== CONFIGURAÇÃO INICIAL ==================== 
 require('dotenv').config();
 process.env.DISABLE_GPU = 'true'; // Otimização para servidores
 
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
-const fs = require('fs');
 const path = require('path');
 
 // ===== CONFIGURAÇÕES =====
@@ -16,14 +15,6 @@ const instagramMsg = `\n\nConheça nosso Instagram: ${INSTAGRAM_LINK}`;
 const ADMINS = process.env.ADMIN_NUMBERS 
   ? process.env.ADMIN_NUMBERS.split(',').map(num => `${num.trim()}@c.us`)
   : ['5511932010789@c.us'];
-
-// ==================== CONFIGURAÇÃO INICIAL ====================
-require('dotenv').config();
-process.env.DISABLE_GPU = 'true'; // Otimização para servidores
-
-const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
-const path = require('path');
 
 // ===== CONFIGURAÇÃO FORTIFICADA DO CLIENTE =====
 const client = new Client({
