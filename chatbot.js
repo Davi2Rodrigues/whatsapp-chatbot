@@ -17,11 +17,20 @@ const ADMINS = process.env.ADMIN_NUMBERS
   ? process.env.ADMIN_NUMBERS.split(',').map(num => `${num.trim()}@c.us`)
   : ['5511932010789@c.us'];
 
-// ===== CONFIGURAÇÃO ATUALIZADA DO CLIENTE =====
+// ==================== CONFIGURAÇÃO INICIAL ====================
+require('dotenv').config();
+process.env.DISABLE_GPU = 'true'; // Otimização para servidores
+
+const { Client, LocalAuth } = require('whatsapp-web.js');
+const qrcode = require('qrcode-terminal');
+const path = require('path');
+
+// ===== CONFIGURAÇÃO FORTIFICADA DO CLIENTE =====
 const client = new Client({
   authStrategy: new LocalAuth({
     dataPath: path.join(__dirname, 'wwebjs_auth'),
-    clientId: 'grsia-bot'
+    clientId: 'grsia-bot',
+    backupSyncIntervalMs: 300000 // Backup a cada 5 minutos
   }),
   puppeteer: {
     headless: true,
@@ -29,15 +38,14 @@ const client = new Client({
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
-      '--single-process', // Otimização para ambientes com poucos recursos (Railway)
+      '--single-process',
       '--disable-accelerated-2d-canvas',
       '--no-first-run',
       '--no-zygote',
       '--disable-gpu'
     ],
-    // Caminho padrão do Chromium no Railway + fallback para desenvolvimento local
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || 
-      (isProduction ? '/usr/bin/chromium' : undefined)
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
+    timeout: 60000 // Aumenta timeout para 60s
   },
   webVersionCache: {
     type: 'remote',
@@ -45,12 +53,13 @@ const client = new Client({
     strict: false
   },
   takeoverOnConflict: true,
-  takeoverTimeoutMs: 30000
+  takeoverTimeoutMs: 45000 // Aumentado para conexões lentas
 });
 
-// ===== SISTEMA DE RECONEXÃO =====
+// ===== SISTEMA DE RECONEXÃO APRIMORADO =====
 let reconnectAttempts = 0;
-const MAX_RECONNECT_ATTEMPTS = 5;
+const MAX_RECONNECT_ATTEMPTS = 7; // Aumentado para mais tentativas
+const BASE_RECONNECT_DELAY = 5000;
 
 async function safeInitialize() {
   try {
@@ -59,13 +68,14 @@ async function safeInitialize() {
     console.log('✅ Conexão estabelecida com sucesso');
     reconnectAttempts = 0;
   } catch (err) {
-    console.error(`❌ Falha na inicialização (${reconnectAttempts + 1}/${MAX_RECONNECT_ATTEMPTS}):`, err.message);
+    const attempt = reconnectAttempts + 1;
+    console.error(`❌ Falha na inicialização (${attempt}/${MAX_RECONNECT_ATTEMPTS}):`, err.message);
     
-    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+    if (attempt < MAX_RECONNECT_ATTEMPTS) {
       reconnectAttempts++;
-      const delayTime = Math.min(reconnectAttempts * 5000, 30000);
-      console.log(`⏳ Tentando reconectar em ${delayTime/1000} segundos...`);
-      setTimeout(safeInitialize, delayTime);
+      const delay = Math.min(BASE_RECONNECT_DELAY * Math.pow(2, attempt - 1), 120000); // Backoff exponencial com máximo de 2min
+      console.log(`⏳ Tentando reconectar em ${delay/1000} segundos...`);
+      setTimeout(safeInitialize, delay);
     } else {
       console.error('🚫 Número máximo de tentativas de reconexão atingido');
       process.exit(1);
