@@ -29,14 +29,14 @@ const client = new Client({
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
-      '--single-process',
       '--disable-accelerated-2d-canvas',
-      '--no-first-run',
-      '--no-zygote',
-      '--disable-gpu'
-    ],
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser',
-    timeout: 60000 // Aumenta timeout para 60s
+      '--disable-gpu',
+      '--use-gl=swiftshader',
+      '--single-process'
+      ],
+      executablePath: '/usr/bin/google-chrome-stable',
+    session: false,  // Evita reutilizar sessões corrompidas
+    qrTimeoutMs: 60000  // Aumenta tempo para QR Code
   },
   webVersionCache: {
     type: 'remote',
