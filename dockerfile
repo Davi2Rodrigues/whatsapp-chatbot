@@ -1,39 +1,24 @@
-# Use a versão mais recente do Node.js com Alpine
-FROM node:20-alpine3.19
+FROM node:18-slim
 
-# Instala apenas as dependências ESSENCIAIS
-RUN apk add --no-cache --upgrade \
+# Instala Chromium e fonts
+RUN apt-get update && \
+    apt-get install -y \
     chromium \
-    nss \
-    freetype \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont \
-    # Dependências mínimas para o WhatsApp Web
-    libx11 \
-    libxcomposite \
-    libxdamage \
-    libxext \
-    libxfixes \
-    libxrandr \
-    libxrender \
-    libxtst \
-    cups-libs \
-    dbus-libs \
-    && rm -rf /var/cache/apk/*
+    fonts-ipafont-gothic \
+    fonts-wqy-zenhei \
+    libxss1 \
+    --no-install-recommends
+
+# Configura Puppeteer
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+ENV NODE_ENV=production
 
 WORKDIR /app
-
 COPY package*.json ./
-RUN npm install --omit=dev --production --ignore-scripts
+RUN npm install
 COPY . .
 
-# Configurações de segurança
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser \
-    DISABLE_GPU=true \
-    NODE_ENV=production \
-    # Reduz vulnerabilidades conhecidas
-    CHROMIUM_FLAGS="--no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage"
+# Volume para sessões persistentes
+VOLUME /app/wwebjs_auth
 
-# Usa xvfb-run diretamente (mais leve que Xvfb)
-CMD ["xvfb-run", "--server-args=-screen 0 1024x768x24", "node", "chatbot.js"]
+CMD ["node", "chatbot.js"]  # Note o maiúsculo!

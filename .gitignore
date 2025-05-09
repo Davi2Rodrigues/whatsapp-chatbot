@@ -1,5 +1,7 @@
-node_modules/
-tokens/node_modules/ 
-node_modules/ 
-node_modules/
+node_modules
+.wwebjs_cache
 .env
+.git
+.gitignore
+wwebjs_auth/
+node_modules/
