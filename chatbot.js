@@ -1,11 +1,3 @@
-// ==================== CONFIGURAÇÃO INICIAL ====================
-require('dotenv').config();
-process.env.DISABLE_GPU = 'true'; // Otimização para servidores
-
-const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
-const path = require('path');
-
 // ===== CONFIGURAÇÕES =====
 const isProduction = process.env.NODE_ENV === 'production';
 const activeChats = new Set();
@@ -16,6 +8,14 @@ const ADMINS = process.env.ADMIN_NUMBERS
   ? process.env.ADMIN_NUMBERS.split(',').map(num => `${num.trim()}@c.us`)
   : ['5511932010789@c.us'];
 
+// ==================== CONFIGURAÇÃO INICIAL ====================
+require('dotenv').config();
+process.env.DISABLE_GPU = 'true'; // Otimização para servidores
+
+const { Client, LocalAuth } = require('whatsapp-web.js');
+const qrcode = require('qrcode-terminal');
+const path = require('path');
+
 // ===== CONFIGURAÇÃO FORTIFICADA DO CLIENTE =====
 const client = new Client({
   authStrategy: new LocalAuth({
@@ -24,7 +24,7 @@ const client = new Client({
     backupSyncIntervalMs: 300000 // Backup a cada 5 minutos
   }),
   puppeteer: {
-    headless: 'new', // Modo headless moderno
+    headless: true,
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -32,28 +32,21 @@ const client = new Client({
       '--single-process',
       '--disable-accelerated-2d-canvas',
       '--disable-gpu',
-      '--use-gl=swiftshader',
-      '--no-zygote'
+      '--use-gl=swiftshader'
     ],
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser',
-    timeout: 120000, // Aumentado para 2 minutos
-    dumpio: true // Logs detalhados do Puppeteer
+    // Configurações adicionais de tempo
+    timeout: 60000,
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH
   },
-  webVersionCache: {
-    type: 'remote',
-    remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
-    strict: false
-  },
-  takeoverOnConflict: true,
-  takeoverTimeoutMs: 45000,
-  qrTimeoutMs: 120000, // 2 minutos para QR Code
-  authTimeout: 90, // 1.5 minutos para autenticação
+  // Aumenta tempo de espera do WhatsApp Web
+  qrTimeoutMs: 60000,
+  authTimeout: 60,
   restartOnAuthFail: true
 });
 
 // ===== SISTEMA DE RECONEXÃO APRIMORADO =====
 let reconnectAttempts = 0;
-const MAX_RECONNECT_ATTEMPTS = 7;
+const MAX_RECONNECT_ATTEMPTS = 7; // Aumentado para mais tentativas
 const BASE_RECONNECT_DELAY = 5000;
 
 async function safeInitialize() {
@@ -68,7 +61,7 @@ async function safeInitialize() {
     
     if (attempt < MAX_RECONNECT_ATTEMPTS) {
       reconnectAttempts++;
-      const delay = Math.min(BASE_RECONNECT_DELAY * Math.pow(2, attempt - 1), 120000);
+      const delay = Math.min(BASE_RECONNECT_DELAY * Math.pow(2, attempt - 1), 120000); // Backoff exponencial com máximo de 2min
       console.log(`⏳ Tentando reconectar em ${delay/1000} segundos...`);
       setTimeout(safeInitialize, delay);
     } else {
@@ -78,7 +71,8 @@ async function safeInitialize() {
   }
 }
 
-// ===== FUNÇÕES PRINCIPAIS =====
+
+// ===== FUNÇÕES PRINCIPAIS (MANTIDAS ORIGINAIS) =====
 function isOfficeOpen() {
   const now = new Date();
   const day = now.getDay();
@@ -156,7 +150,6 @@ client.on('qr', qr => {
 
 client.on('ready', () => {
   console.log('🚀 Bot pronto para operação');
-  console.log(`⏰ Modo: ${isOfficeOpen() ? 'Atendimento Ativo' : 'Fora do Horário Comercial'}`);
 });
 
 client.on('disconnected', async (reason) => {
@@ -170,18 +163,22 @@ client.on('message', async msg => {
   try {
     if (msg.fromMe || msg.isGroupMsg) return;
 
+    // Bloqueio de áudios
     if (msg.hasMedia) {
       await client.sendMessage(msg.from, '⚠️ Por favor, envie apenas mensagens escritas. Áudios não são suportados.');
       return;
     }
 
+    // Comandos admin
     if (isAdmin(msg.from) && await handleAdminCommands(msg)) return;
 
+    // Atendimento humano
     if (activeHumanChats.has(msg.from)) {
       console.log(`💬 [ATENDIMENTO] ${msg.from}: ${msg.body}`);
       return;
     }
 
+    // Fluxo automático
     if (!isOfficeOpen()) {
       await client.sendMessage(msg.from, 
         '📅 Fora do horário de atendimento.\n\n' +
@@ -193,33 +190,30 @@ client.on('message', async msg => {
 
     const text = msg.body.toLowerCase().trim();
 
-    if (/^(menu|ola|oi|olá)/i.test(text)) {
+    if (/^(menu|Menu|dia|tarde|noite|oi|Oi|Olá|olá|ola|Ola)/i.test(text)) {
       await handleGreeting(msg);
     } 
     else if (/^[1-4]$/.test(text)) {
       await handleMenuOptions(msg);
     }
-    else if (/(obrigad[oa]|valeu|agradeço|grato|grata)/i.test(text)) {
+    else if (/(obrigado|obrigada|valeu|agradeço|grato|grata)/i.test(text)) {
       await client.sendMessage(msg.from, '😊 Disponha! Estamos à disposição!' + instagramMsg);
     }
     else {
       await client.sendMessage(msg.from, 'Digite "menu" para ver as opções disponíveis.');
     }
   } catch (error) {
-    console.error('Erro no handler de mensagens:', error);
+    console.error('Erro:', error);
   }
 });
 
 // ===== INICIALIZAÇÃO =====
 console.log('🔄 Iniciando bot GRsia...');
-console.log(`⚙️ Ambiente: ${process.env.NODE_ENV || 'development'}`);
-console.log(`🖥️ Chromium path: ${client.options.puppeteer.executablePath}`);
-
 safeInitialize();
 
-// ===== SHUTDOWN GRACEFUL =====
-const shutdown = async (signal) => {
-  console.log(`\n🛑 Recebido ${signal}, encerrando bot...`);
+// ===== ENCERRAMENTO =====
+process.on('SIGINT', async () => {
+  console.log('\n🛑 Encerrando bot...');
   try {
     await client.destroy();
     console.log('✅ Conexão encerrada corretamente');
@@ -228,7 +222,4 @@ const shutdown = async (signal) => {
     console.error('⚠️ Erro ao encerrar:', err);
     process.exit(1);
   }
-};
-
-process.on('SIGINT', () => shutdown('SIGINT'));
-process.on('SIGTERM', () => shutdown('SIGTERM'));
+});
