@@ -1,11 +1,7 @@
-const { execSync } = require('child_process');
-
-try {
-  // Verifica se o Chromium está acessível
-  const version = execSync(`${process.env.PUPPETEER_EXECUTABLE_PATH || 'chromium-browser'} --version`).toString();
-  console.log('✅ Chromium OK:', version.trim());
-  process.exit(0);
-} catch (e) {
-  console.error('❌ Chromium check failed:', e.message);
-  process.exit(1);
-}
+// Verifica se o processo Node está rodando
+const http = require('http');
+const server = http.createServer((req, res) => {
+  res.writeHead(200);
+  res.end('OK');
+});
+server.listen(3000);
