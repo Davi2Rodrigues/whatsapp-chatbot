@@ -1,41 +1,37 @@
-# Use a tag específica para melhor reprodutibilidade
-FROM node@sha256:52cbfd66512d9cec0e7faad8366466434b69d3b96e805282f959b414e59bb91d
+# Use a imagem base do Node.js com suporte a Alpine (mais leve e compatível)
+FROM node:18-alpine
 
-# Metadata (opcional mas recomendado)
-LABEL maintainer="davirodrigues7268@gmail.com"
-LABEL version="1.0"
-LABEL org.opencontainers.image.source="https://github.com/seu-usuario/seu-repo"
-LABEL org.opencontainers.image.licenses="MIT"
-
-# Instala dependências explicitamente
-RUN apt-get update && \
-    apt-get install -y \
+# Instala dependências necessárias para o Puppeteer/Chromium
+RUN apk add --no-cache \
     chromium \
-    fonts-ipafont-gothic \
-    fonts-wqy-zenhei \
-    libxss1 \
-    && rm -rf /var/lib/apt/lists/*
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    && echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories \
+    && echo "http://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories \
+    && echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories \
+    && apk add --no-cache --upgrade \
+    libstdc++
 
-# Configurações de ambiente
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+# Configura variáveis de ambiente para o Puppeteer
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV NODE_ENV=production
 
-# Cria e configura diretório de trabalho
+# Diretório de trabalho
 WORKDIR /app
 
-# Copia seletivamente (melhor performance)
+# Copia os arquivos de dependência primeiro (otimiza o cache do Docker)
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --production
 
-# Copia o resto após instalar dependências
+# Copia o resto do código
 COPY . .
 
-# Volume para dados persistentes
+# Volume para dados persistentes do WhatsApp
 VOLUME /app/wwebjs_auth
 
-# Health check (opcional mas recomendado)
-HEALTHCHECK --interval=30s --timeout=3s \
-  CMD node /app/Js_healthcheck.js || exit 1
-
-# Entrypoint no formato JSON
-ENTRYPOINT ["node", "chatbot.js"]
+# Comando de inicialização
+CMD ["node", "chatbot.js"]

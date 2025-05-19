@@ -25,6 +25,7 @@ const client = new Client({
   }),
   puppeteer: {
     headless: true,
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser',
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -34,14 +35,7 @@ const client = new Client({
       '--disable-gpu',
       '--use-gl=swiftshader'
     ],
-    // Configurações adicionais de tempo
-    timeout: 60000,
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH
-  },
-  // Aumenta tempo de espera do WhatsApp Web
-  qrTimeoutMs: 60000,
-  authTimeout: 60,
-  restartOnAuthFail: true
+  }
 });
 
 // ===== SISTEMA DE RECONEXÃO APRIMORADO =====
