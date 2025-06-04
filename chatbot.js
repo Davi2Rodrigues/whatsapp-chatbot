@@ -1,72 +1,41 @@
-// ===== CONFIGURAÇÕES =====
-const isProduction = process.env.NODE_ENV === 'production';
-const activeChats = new Set();
-let activeHumanChats = new Set();
-const INSTAGRAM_LINK = process.env.INSTAGRAM_URL || 'https://www.instagram.com/grsia.br/';
-const instagramMsg = `\n\nConheça nosso Instagram: ${INSTAGRAM_LINK}`;
-const ADMINS = process.env.ADMIN_NUMBERS 
-  ? process.env.ADMIN_NUMBERS.split(',').map(num => `${num.trim()}@c.us`)
-  : ['5511932010789@c.us'];
-
-// ==================== CONFIGURAÇÃO INICIAL ====================
 require('dotenv').config();
-process.env.DISABLE_GPU = 'true'; // Otimização para servidores
-
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const path = require('path');
 
-// ===== CONFIGURAÇÃO FORTIFICADA DO CLIENTE =====
+// ===== CONFIGURAÇÕES =====
+const INSTAGRAM_LINK = process.env.INSTAGRAM_URL || 'https://www.instagram.com/grsia.br/';
+const SITE_URL = process.env.SITE_URL || 'https://grsia.com.br';
+const ADMINS = process.env.ADMIN_NUMBERS 
+  ? process.env.ADMIN_NUMBERS.split(',').map(num => `${num.trim()}@c.us`)
+  : ['5511932010789@c.us'];
+
+// ===== SETUP DO CLIENTE =====
 const client = new Client({
   authStrategy: new LocalAuth({
-    dataPath: path.join(__dirname, 'wwebjs_auth'),
-    clientId: 'grsia-bot',
-    backupSyncIntervalMs: 300000 // Backup a cada 5 minutos
+    dataPath: path.join(__dirname, '.wwebjs_auth'),
+    clientId: 'grsia-bot'
   }),
   puppeteer: {
     headless: true,
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser',
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
-      '--single-process',
-      '--disable-accelerated-2d-canvas',
-      '--disable-gpu',
-      '--use-gl=swiftshader'
+      '--single-process'
     ],
+    executablePath: process.env.CHROMIUM_PATH || null
+  },
+  webVersionCache: {
+    type: 'remote',
+    remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html'
   }
 });
 
-// ===== SISTEMA DE RECONEXÃO APRIMORADO =====
-let reconnectAttempts = 0;
-const MAX_RECONNECT_ATTEMPTS = 7; // Aumentado para mais tentativas
-const BASE_RECONNECT_DELAY = 5000;
+// ===== VARIÁVEIS DE ESTADO =====
+let activeHumanChats = new Set();
 
-async function safeInitialize() {
-  try {
-    console.log('🔧 Iniciando conexão...');
-    await client.initialize();
-    console.log('✅ Conexão estabelecida com sucesso');
-    reconnectAttempts = 0;
-  } catch (err) {
-    const attempt = reconnectAttempts + 1;
-    console.error(`❌ Falha na inicialização (${attempt}/${MAX_RECONNECT_ATTEMPTS}):`, err.message);
-    
-    if (attempt < MAX_RECONNECT_ATTEMPTS) {
-      reconnectAttempts++;
-      const delay = Math.min(BASE_RECONNECT_DELAY * Math.pow(2, attempt - 1), 120000); // Backoff exponencial com máximo de 2min
-      console.log(`⏳ Tentando reconectar em ${delay/1000} segundos...`);
-      setTimeout(safeInitialize, delay);
-    } else {
-      console.error('🚫 Número máximo de tentativas de reconexão atingido');
-      process.exit(1);
-    }
-  }
-}
-
-
-// ===== FUNÇÕES PRINCIPAIS (MANTIDAS ORIGINAIS) =====
+// ===== FUNÇÕES UTILITÁRIAS =====
 function isOfficeOpen() {
   const now = new Date();
   const day = now.getDay();
@@ -78,40 +47,11 @@ function isAdmin(number) {
   return ADMINS.includes(number);
 }
 
-async function handleGreeting(msg) {
-  const contact = await msg.getContact();
-  const name = contact.pushname || 'Cliente';
-  await client.sendMessage(
-    msg.from, 
-    `👋 Olá *${name.split(" ")[0]}*! Sou o assistente da *GRsia*.\n\n` +
-    `Escolha uma opção:\n\n` +
-    `1️⃣ - Falar com advogado\n` +
-    `2️⃣ - Agendar consulta\n` +
-    `3️⃣ - Dúvidas sobre processo\n` +
-    `4️⃣ - Outras perguntas`
-  );
+function instagramMsg() {
+  return `\n\nConheça nosso Instagram: ${INSTAGRAM_LINK}`;
 }
 
-async function handleMenuOptions(msg) {
-  const responses = {
-    '1': `⏳ Conectando você com um advogado. Por favor, envie sua dúvida diretamente e aguarde.`,
-    '2': `📅 Vou verificar os horários disponíveis e te retorno em breve.` + instagramMsg,
-    '3': `⚖️ Aguarde um momento enquanto conectamos você com um advogado. Envie suas dúvidas.`,
-    '4': `📌 Para outras informações: ${process.env.SITE_URL || 'https://grsia.com.br'}` + instagramMsg
-  };
-
-  const response = responses[msg.body] || 'Opção inválida. Digite "menu" para ajuda.';
-  await client.sendMessage(msg.from, response);
-
-  if (msg.body === '1' || msg.body === '3') {
-    activeHumanChats.add(msg.from);
-    await client.sendMessage(msg.from, 
-      'A partir de agora, você está em contato direto com nosso time. ' +
-      'Envie suas dúvidas e um advogado responderá em breve.'
-    );
-  }
-}
-
+// ===== HANDLERS =====
 async function handleAdminCommands(msg) {
   const command = msg.body.toLowerCase().trim();
   
@@ -136,7 +76,41 @@ async function handleAdminCommands(msg) {
   return false;
 }
 
-// ===== EVENTOS =====
+async function handleGreeting(msg) {
+  const contact = await msg.getContact();
+  const name = contact.pushname || 'Cliente';
+  await client.sendMessage(
+    msg.from, 
+    `👋 Olá *${name.split(" ")[0]}*! Sou o assistente da *GRsia*.\n\n` +
+    `Escolha uma opção:\n\n` +
+    `1️⃣ - Falar com advogado\n` +
+    `2️⃣ - Agendar consulta\n` +
+    `3️⃣ - Dúvidas sobre processo\n` +
+    `4️⃣ - Outras perguntas`
+  );
+}
+
+async function handleMenuOptions(msg) {
+  const responses = {
+    '1': `⏳ Conectando você com um advogado. Por favor, envie sua dúvida diretamente e aguarde.`,
+    '2': `📅 Vou verificar os horários disponíveis e te retorno em breve.${instagramMsg()}`,
+    '3': `⚖️ Aguarde um momento enquanto conectamos você com um advogado. Envie suas dúvidas.`,
+    '4': `📌 Para outras informações: ${SITE_URL}${instagramMsg()}`
+  };
+
+  const response = responses[msg.body] || 'Opção inválida. Digite "menu" para ajuda.';
+  await client.sendMessage(msg.from, response);
+
+  if (msg.body === '1' || msg.body === '3') {
+    activeHumanChats.add(msg.from);
+    await client.sendMessage(msg.from, 
+      'A partir de agora, você está em contato direto com nosso time. ' +
+      'Envie suas dúvidas e um advogado responderá em breve.'
+    );
+  }
+}
+
+// ===== EVENTOS PRINCIPAIS =====
 client.on('qr', qr => {
   console.log('🔑 QR Code para autenticação:');
   qrcode.generate(qr, { small: true });
@@ -146,11 +120,8 @@ client.on('ready', () => {
   console.log('🚀 Bot pronto para operação');
 });
 
-client.on('disconnected', async (reason) => {
+client.on('disconnected', (reason) => {
   console.log(`⚠️ Desconectado: ${reason}`);
-  console.log('Tentando reconectar...');
-  reconnectAttempts = 0;
-  await safeInitialize();
 });
 
 client.on('message', async msg => {
@@ -164,7 +135,9 @@ client.on('message', async msg => {
     }
 
     // Comandos admin
-    if (isAdmin(msg.from) && await handleAdminCommands(msg)) return;
+    if (isAdmin(msg.from)) {
+      if (await handleAdminCommands(msg)) return;
+    }
 
     // Atendimento humano
     if (activeHumanChats.has(msg.from)) {
@@ -177,21 +150,21 @@ client.on('message', async msg => {
       await client.sendMessage(msg.from, 
         '📅 Fora do horário de atendimento.\n\n' +
         'Funcionamos de seg a sex, das 09:00 às 18:00. ' +
-        'Por favor, retorne em horário comercial. 😊' + instagramMsg
+        'Por favor, retorne em horário comercial. 😊' + instagramMsg()
       );
       return;
     }
 
     const text = msg.body.toLowerCase().trim();
 
-    if (/^(menu|Menu|dia|tarde|noite|oi|Oi|Olá|olá|ola|Ola)/i.test(text)) {
+    if (/^(menu|ola|oi|olá)/i.test(text)) {
       await handleGreeting(msg);
     } 
     else if (/^[1-4]$/.test(text)) {
       await handleMenuOptions(msg);
     }
-    else if (/(obrigado|obrigada|valeu|agradeço|grato|grata)/i.test(text)) {
-      await client.sendMessage(msg.from, '😊 Disponha! Estamos à disposição!' + instagramMsg);
+    else if (/(obrigado|obrigada|valeu)/i.test(text)) {
+      await client.sendMessage(msg.from, '😊 Disponha! Estamos à disposição!' + instagramMsg());
     }
     else {
       await client.sendMessage(msg.from, 'Digite "menu" para ver as opções disponíveis.');
@@ -203,9 +176,9 @@ client.on('message', async msg => {
 
 // ===== INICIALIZAÇÃO =====
 console.log('🔄 Iniciando bot GRsia...');
-safeInitialize();
+client.initialize();
 
-// ===== ENCERRAMENTO =====
+// ===== ENCERRAMENTO GRACIOSO =====
 process.on('SIGINT', async () => {
   console.log('\n🛑 Encerrando bot...');
   try {

@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: wppconnect-server
+    runtime: node
+    buildCommand: npm install
+    startCommand: node chatbot.js
+    envVars:
+      - key: SECRET
+        value: 123321597Davi
+      - key: ENABLE_WEB
+        value: true
+    port: 21465
