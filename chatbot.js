@@ -189,4 +189,23 @@ process.on('SIGINT', async () => {
     console.error('⚠️ Erro ao encerrar:', err);
     process.exit(1);
   }
+
+
+// Ping automático (adicione no final do arquivo)
+if(process.env.NODE_ENV === 'production') {
+  setInterval(() => {
+    require('axios').get(`https://${process.env.RENDER_SERVICE_NAME}.onrender.com`)
+      .catch(e => console.log('Ping automático:', e.message));
+  }, 5 * 60 * 1000); // 5 minutos
+}
+
+
+// Adicione no FINAL do arquivo
+const http = require('http');
+const server = http.createServer((req, res) => {
+  res.writeHead(200);
+  res.end('Bot Online');
+});
+server.listen(process.env.PORT || 3000, '0.0.0.0');
+
 });

@@ -1,12 +1,14 @@
 services:
   - type: web
-    name: wppconnect-server
+    name: whatsapp-bot-grsia
     runtime: node
     buildCommand: npm install
-    startCommand: node chatbot.js
+    startCommand: node bot.js
     envVars:
       - key: SECRET
         value: 123321597Davi
-      - key: ENABLE_WEB
-        value: true
-    port: 21465
+      - key: ADMIN_NUMBERS
+        value: 5511932010789,5511983398414
+      - key: INSTAGRAM_URL
+        value: https://www.instagram.com/grsia.br/
+    plan: free
