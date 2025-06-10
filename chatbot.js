@@ -2,6 +2,7 @@ require('dotenv').config();
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const path = require('path');
+const express = require('express'); // Adicionado para o servidor web
 
 // ===== CONFIGURAÇÕES =====
 const INSTAGRAM_LINK = process.env.INSTAGRAM_URL || 'https://www.instagram.com/grsia.br/';
@@ -10,7 +11,21 @@ const ADMINS = process.env.ADMIN_NUMBERS
   ? process.env.ADMIN_NUMBERS.split(',').map(num => `${num.trim()}@c.us`)
   : ['5511932010789@c.us'];
 
-// ===== SETUP DO CLIENTE =====
+// ===== SERVIDOR WEB PARA O RENDER =====
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Rota básica para health checks
+app.get('/', (req, res) => {
+  res.status(200).send('🤖 Bot GRsia Online!');
+});
+
+// Inicia o servidor web
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Servidor web rodando na porta ${PORT}`);
+});
+
+// ===== SETUP DO CLIENTE WHATSAPP =====
 const client = new Client({
   authStrategy: new LocalAuth({
     dataPath: path.join(__dirname, '.wwebjs_auth'),
@@ -183,29 +198,24 @@ process.on('SIGINT', async () => {
   console.log('\n🛑 Encerrando bot...');
   try {
     await client.destroy();
-    console.log('✅ Conexão encerrada corretamente');
-    process.exit(0);
+    server.close(() => {
+      console.log('✅ Servidor web e conexão WhatsApp encerrados');
+      process.exit(0);
+    });
   } catch (err) {
     console.error('⚠️ Erro ao encerrar:', err);
     process.exit(1);
   }
+});
 
-
-// Ping automático (adicione no final do arquivo)
-if(process.env.NODE_ENV === 'production') {
+// Ping automático (opcional - mantém o bot ativo)
+if (process.env.NODE_ENV === 'production') {
+  const axios = require('axios');
+  const PING_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+  
   setInterval(() => {
-    require('axios').get(`https://${process.env.RENDER_SERVICE_NAME}.onrender.com`)
-      .catch(e => console.log('Ping automático:', e.message));
+    axios.get(PING_URL)
+      .then(() => console.log('✅ Ping realizado com sucesso'))
+      .catch(e => console.log('⚠️ Falha no ping:', e.message));
   }, 5 * 60 * 1000); // 5 minutos
 }
-
-
-// Adicione no FINAL do arquivo
-const http = require('http');
-const server = http.createServer((req, res) => {
-  res.writeHead(200);
-  res.end('Bot Online');
-});
-server.listen(process.env.PORT || 3000, '0.0.0.0');
-
-});
