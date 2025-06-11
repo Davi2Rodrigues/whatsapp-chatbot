@@ -46,7 +46,7 @@ const client = new Client({
       '--single-process',
       '--no-zygote'
     ],
-    executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium-browser'
+     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || require('puppeteer').executablePath
   },
   webVersionCache: {
     type: 'remote',
