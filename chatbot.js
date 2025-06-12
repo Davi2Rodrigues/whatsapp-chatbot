@@ -2,40 +2,34 @@ require('dotenv').config();
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const path = require('path');
-const express = require('express');
-const moment = require('moment-timezone');
-const axios = require('axios'); // Para health checks
+const express = require('express'); // Adicionado para o servidor web
 
 // ===== CONFIGURAÇÕES =====
 const INSTAGRAM_LINK = process.env.INSTAGRAM_URL || 'https://www.instagram.com/grsia.br/';
 const SITE_URL = process.env.SITE_URL || 'https://grsia.com.br';
-const ADMINS = process.env.ADMIN_NUMBERS?.split(',').map(num => `${num.trim()}@c.us`) || ['5511932010789@c.us'];
+const ADMINS = process.env.ADMIN_NUMBERS 
+  ? process.env.ADMIN_NUMBERS.split(',').map(num => `${num.trim()}@c.us`)
+  : ['5511932010789@c.us'];
+
+// ===== SERVIDOR WEB PARA O RENDER =====
+const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ===== SERVIDOR WEB (OTIMIZADO) =====
-const app = express();
-app.use(express.json());
-
-// Health check com horário BR
+// Rota básica para health checks
 app.get('/', (req, res) => {
-  const horaBR = moment().tz('America/Sao_Paulo').format('HH:mm:ss');
-  res.status(200).json({ 
-    status: 'online',
-    horaBrasilia: horaBR,
-    horarioComercial: isOfficeOpen() ? 'ABERTO' : 'FECHADO'
-  });
+  res.status(200).send('🤖 Bot GRsia Online!');
 });
 
+// Inicia o servidor web
 const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+  console.log(`Servidor web rodando na porta ${PORT}`);
 });
 
-// ===== WHATSAPP CLIENT (CONFIGURAÇÃO AVANÇADA) =====
+// ===== SETUP DO CLIENTE WHATSAPP =====
 const client = new Client({
   authStrategy: new LocalAuth({
     dataPath: path.join(__dirname, '.wwebjs_auth'),
-    clientId: 'grsia-bot',
-    restartOnAuthFail: true // Recuperação automática de falhas
+    clientId: 'grsia-bot'
   }),
   puppeteer: {
     headless: true,
@@ -43,122 +37,185 @@ const client = new Client({
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
-      '--single-process',
-      '--no-zygote'
+      '--single-process'
     ],
-     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || require('puppeteer').executablePath
+    executablePath: process.env.CHROMIUM_PATH || null
   },
   webVersionCache: {
     type: 'remote',
     remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html'
-  },
-  takeoverOnConflict: true // Evita conflitos de sessão
+  }
 });
 
-// ===== FUNÇÕES UTILITÁRIAS (ATUALIZADAS) =====
+// ===== VARIÁVEIS DE ESTADO =====
+let activeHumanChats = new Set();
+
+// ===== FUNÇÕES UTILITÁRIAS =====
 function isOfficeOpen() {
-  const now = moment().tz('America/Sao_Paulo');
-  const day = now.day(); // 0 (Domingo) a 6 (Sábado)
-  const hour = now.hour();
-  return day >= 1 && day <= 5 && hour >= 9 && hour < 18; // Seg-Sex, 09h-18h BR
+  const now = new Date();
+  const day = now.getDay();
+  const hour = now.getHours();
+  return day >= 1 && day <= 5 && hour >= 9 && hour < 18;
+}
+
+function isAdmin(number) {
+  return ADMINS.includes(number);
 }
 
 function instagramMsg() {
-  return `\n\n📱 Siga nosso Instagram: ${INSTAGRAM_LINK}`;
+  return `\n\nConheça nosso Instagram: ${INSTAGRAM_LINK}`;
 }
 
-// ===== HANDLERS (OTIMIZADOS) =====
+// ===== HANDLERS =====
+async function handleAdminCommands(msg) {
+  const command = msg.body.toLowerCase().trim();
+  
+  if (command.startsWith('!finalizar ')) {
+    const number = command.split(' ')[1].replace(/\D/g, '') + '@c.us';
+    if (activeHumanChats.has(number)) {
+      activeHumanChats.delete(number);
+      await msg.reply(`✅ Atendimento finalizado para ${number}`);
+      await client.sendMessage(number, 'Atendimento encerrado. Digite "menu" para novas opções.');
+    }
+    return true;
+  }
+  
+  if (command === '!status') {
+    await msg.reply(activeHumanChats.size > 0 
+      ? `📊 Atendimentos ativos: ${activeHumanChats.size}\n${[...activeHumanChats].join('\n')}`
+      : '✅ Todos os chats em modo automático'
+    );
+    return true;
+  }
+  
+  return false;
+}
+
 async function handleGreeting(msg) {
   const contact = await msg.getContact();
   const name = contact.pushname || 'Cliente';
-  await msg.reply(
+  await client.sendMessage(
+    msg.from, 
     `👋 Olá *${name.split(" ")[0]}*! Sou o assistente da *GRsia*.\n\n` +
     `Escolha uma opção:\n\n` +
     `1️⃣ - Falar com advogado\n` +
     `2️⃣ - Agendar consulta\n` +
     `3️⃣ - Dúvidas sobre processo\n` +
-    `4️⃣ - Outras perguntas\n\n` +
-    `*Horário de atendimento:* Seg-Sex, 09h-18h (${moment().tz('America/Sao_Paulo').format('HH:mm')})`
+    `4️⃣ - Outras perguntas`
   );
 }
 
-// ===== EVENTOS (COM RECUPERAÇÃO DE ERROS) =====
-client.on('qr', qr => {
-  console.log('✅ QR Code gerado! Use-o para autenticar:');
-  qrcode.generate(qr, { small: true });
-  
-  // Opcional: Envie o QR por e-mail/API se estiver em produção
-  if (process.env.NODE_ENV === 'production') {
-    console.log('⚠️ Em produção, monitore os logs para obter o QR Code.');
-  }
-});
+async function handleMenuOptions(msg) {
+  const responses = {
+    '1': `⏳ Conectando você com um advogado. Por favor, envie sua dúvida diretamente e aguarde.`,
+    '2': `📅 Vou verificar os horários disponíveis e te retorno em breve.${instagramMsg()}`,
+    '3': `⚖️ Aguarde um momento enquanto conectamos você com um advogado. Envie suas dúvidas.`,
+    '4': `📌 Para outras informações: ${SITE_URL}${instagramMsg()}`
+  };
 
-client.on('authenticated', () => {
-  console.log('🔑 Autenticação realizada!');
+  const response = responses[msg.body] || 'Opção inválida. Digite "menu" para ajuda.';
+  await client.sendMessage(msg.from, response);
+
+  if (msg.body === '1' || msg.body === '3') {
+    activeHumanChats.add(msg.from);
+    await client.sendMessage(msg.from, 
+      'A partir de agora, você está em contato direto com nosso time. ' +
+      'Envie suas dúvidas e um advogado responderá em breve.'
+    );
+  }
+}
+
+// ===== EVENTOS PRINCIPAIS =====
+client.on('qr', qr => {
+  console.log('🔑 QR Code para autenticação:');
+  qrcode.generate(qr, { small: true });
 });
 
 client.on('ready', () => {
-  console.log('🚀 Bot pronto para operação!');
-  console.log(`⏰ Horário atual BR: ${moment().tz('America/Sao_Paulo').format('HH:mm:ss')}`);
+  console.log('🚀 Bot pronto para operação');
 });
 
-client.on('disconnected', async (reason) => {
+client.on('disconnected', (reason) => {
   console.log(`⚠️ Desconectado: ${reason}`);
-  console.log('Tentando reconectar...');
-  await client.initialize();
 });
 
-// ===== MENSAGENS (COM LOGS DETALHADOS) =====
 client.on('message', async msg => {
   try {
     if (msg.fromMe || msg.isGroupMsg) return;
 
-    const horaBR = moment().tz('America/Sao_Paulo').format('HH:mm:ss');
-    console.log(`[${horaBR}] Mensagem de ${msg.from}: ${msg.body}`);
+    // Bloqueio de áudios
+    if (msg.hasMedia) {
+      await client.sendMessage(msg.from, '⚠️ Por favor, envie apenas mensagens escritas. Áudios não são suportados.');
+      return;
+    }
 
-    // Fluxo principal (mesmo do seu código original)
+    // Comandos admin
+    if (isAdmin(msg.from)) {
+      if (await handleAdminCommands(msg)) return;
+    }
+
+    // Atendimento humano
+    if (activeHumanChats.has(msg.from)) {
+      console.log(`💬 [ATENDIMENTO] ${msg.from}: ${msg.body}`);
+      return;
+    }
+
+    // Fluxo automático
     if (!isOfficeOpen()) {
-      await msg.reply(
-        `📅 Fora do horário de atendimento (09h-18h, Seg-Sex).\n` +
-        `⏰ Hora atual: ${horaBR}\n\n` +
-        `Volte em horário comercial! 😊` + instagramMsg()
+      await client.sendMessage(msg.from, 
+        '📅 Fora do horário de atendimento.\n\n' +
+        'Funcionamos de seg a sex, das 09:00 às 18:00. ' +
+        'Por favor, retorne em horário comercial. 😊' + instagramMsg()
       );
       return;
     }
 
-    // ... (restante dos handlers de mensagem)
+    const text = msg.body.toLowerCase().trim();
 
+    if (/^(menu|ola|oi|olá)/i.test(text)) {
+      await handleGreeting(msg);
+    } 
+    else if (/^[1-4]$/.test(text)) {
+      await handleMenuOptions(msg);
+    }
+    else if (/(obrigado|obrigada|valeu)/i.test(text)) {
+      await client.sendMessage(msg.from, '😊 Disponha! Estamos à disposição!' + instagramMsg());
+    }
+    else {
+      await client.sendMessage(msg.from, 'Digite "menu" para ver as opções disponíveis.');
+    }
   } catch (error) {
-    console.error('Erro ao processar mensagem:', error);
+    console.error('Erro:', error);
   }
 });
 
-// ===== INICIALIZAÇÃO SEGURA =====
-const startBot = async () => {
-  try {
-    await client.initialize();
-    console.log('🔍 Inicializando bot...');
-  } catch (error) {
-    console.error('Falha na inicialização:', error);
-    setTimeout(startBot, 5000); // Tenta novamente após 5 segundos
-  }
-};
-
-startBot();
-
-// ===== PING AUTOMÁTICO (EVITA COLD START) =====
-if (process.env.NODE_ENV === 'production') {
-  const PING_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
-  setInterval(() => {
-    axios.get(PING_URL)
-      .then(() => console.log(`♻️ Ping às ${moment().tz('America/Sao_Paulo').format('HH:mm:ss')}`))
-      .catch(e => console.log('⚠️ Falha no ping:', e.message));
-  }, 4 * 60 * 1000); // 4 minutos (Render free permite até 5min)
-}
+// ===== INICIALIZAÇÃO =====
+console.log('🔄 Iniciando bot GRsia...');
+client.initialize();
 
 // ===== ENCERRAMENTO GRACIOSO =====
 process.on('SIGINT', async () => {
   console.log('\n🛑 Encerrando bot...');
-  await client.destroy();
-  server.close(() => process.exit(0));
+  try {
+    await client.destroy();
+    server.close(() => {
+      console.log('✅ Servidor web e conexão WhatsApp encerrados');
+      process.exit(0);
+    });
+  } catch (err) {
+    console.error('⚠️ Erro ao encerrar:', err);
+    process.exit(1);
+  }
 });
+
+// Ping automático (opcional - mantém o bot ativo)
+if (process.env.NODE_ENV === 'production') {
+  const axios = require('axios');
+  const PING_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+  
+  setInterval(() => {
+    axios.get(PING_URL)
+      .then(() => console.log('✅ Ping realizado com sucesso'))
+      .catch(e => console.log('⚠️ Falha no ping:', e.message));
+  }, 5 * 60 * 1000); // 5 minutos
+}
