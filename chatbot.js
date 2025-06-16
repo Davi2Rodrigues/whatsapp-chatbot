@@ -42,22 +42,36 @@ const client = new Client({
     executablePath: process.env.CHROMIUM_PATH || null
   },
   webVersionCache: {
-    type: 'remote',
-    remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html'
-  }
+   type: 'remote',
+    remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
+    strategy: 'stable' // Evita recarregamentos desnecessários
+  },
+  takeoverOnConflict: true // Reconecta automaticamente
 });
 
 // ===== VARIÁVEIS DE ESTADO =====
 let activeHumanChats = new Set();
 
 // ===== FUNÇÕES UTILITÁRIAS =====
+const moment = require('moment-timezone');
+
 function isOfficeOpen() {
-  const now = new Date();
-  const day = now.getDay();
-  const hour = now.getHours();
+  const now = moment().tz('America/Sao_Paulo');
+  const day = now.day(); // 0 (Domingo) a 6 (Sábado)
+  const hour = now.hour();
+  
+  client.on('ready', () => {
+  console.log('✅ Bot pronto - Horário BR:', moment().tz('America/Sao_Paulo').format('HH:mm'));
+  // Mantém a sessão ativa
+  setInterval(() => client.getState(), 60 * 1000); 
+});
+
+  // Segunda a Sexta, 09h-18h (BR)
   return day >= 1 && day <= 5 && hour >= 9 && hour < 18;
 }
 
+// Adicione logs para debug (opcional)
+console.log('Horário BR atual:', moment().tz('America/Sao_Paulo').format('DD/MM/YYYY HH:mm:ss'));
 function isAdmin(number) {
   return ADMINS.includes(number);
 }
@@ -218,4 +232,14 @@ if (process.env.NODE_ENV === 'production') {
       .then(() => console.log('✅ Ping realizado com sucesso'))
       .catch(e => console.log('⚠️ Falha no ping:', e.message));
   }, 5 * 60 * 1000); // 5 minutos
+
+  // Adicione no seu arquivo principal (bot-grsia.js)
+const PING_INTERVAL = 5 * 60 * 1000; // 5 minutos (máximo permitido no free)
+
+setInterval(() => {
+  axios.get(process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`)
+    .then(() => console.log('✅ Ping realizado:', new Date().toLocaleString('pt-BR')))
+    .catch(e => console.log('⚠️ Falha no ping:', e.message));
+}, PING_INTERVAL);
+
 }
