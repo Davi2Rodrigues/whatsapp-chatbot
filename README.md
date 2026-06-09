@@ -1,19 +1,46 @@
-# Chatbot para WhatsApp
+WhatsApp Law Firm Chatbot
 
-Projeto desenvolvido em Node.js para automatização de atendimentos via WhatsApp.
+Sistema de atendimento automatizado desenvolvido para um escritório de advocacia utilizando Node.js, WhatsApp Web, Express e Puppeteer.
 
-## Funcionalidades
+Sobre o projeto
 
-- Respostas automáticas
-- Fluxos de atendimento
-- Encaminhamento de informações
-- Organização inicial do contato com clientes
+O objetivo do projeto foi automatizar o atendimento inicial dos clientes através do WhatsApp, reduzindo tarefas repetitivas e agilizando o direcionamento dos atendimentos.
 
-## Tecnologias
+O sistema permite que clientes realizem consultas iniciais, obtenham informações e sejam encaminhados para atendimento humano quando necessário.
+
+Funcionalidades
+
+- Atendimento automatizado via WhatsApp
+- Fluxo de agendamento
+- Consulta de processos
+- Encaminhamento para atendimento humano
+- Comandos administrativos
+- Gerenciamento de sessões ativas
+- Reconexão automática em caso de falhas
+- Tratamento de erros e logs
+
+Tecnologias utilizadas
 
 - Node.js
 - JavaScript
+- Express.js
+- WhatsApp Web API
+- Puppeteer
+- Moment.js
+- Dotenv
 
-## Status
+Arquitetura
 
-Implementado e utilizado em ambiente real.
+O sistema utiliza uma máquina de estados para controlar os fluxos conversacionais dos usuários, permitindo o gerenciamento de diferentes etapas do atendimento de forma organizada e escalável.
+
+Melhorias futuras
+
+- Integração com PostgreSQL
+- Dashboard administrativo
+- Containerização com Docker
+- Implementação de testes automatizados
+- Deploy em ambiente cloud
+
+Autor
+
+Davi Brito Rodrigues
