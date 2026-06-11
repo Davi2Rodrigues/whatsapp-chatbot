@@ -1,13 +1,22 @@
-node_modules
-.wwebjs_cache
+# Dependências
+node_modules/
+
+# Variáveis de ambiente
 .env
-.git
-.gitignore
+
+# Sessões WhatsApp
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Arquivos de autenticação
 .session/
 .auth/
-wwebjs_auth/
-node_modules/
-.wwebjs_auth/
-*.log.cache/
-.wwebjs_cache/
+
+# Logs
+*.log
+
+# Arquivos temporários
+.cache/
+
+# QR Code
 qrcode.txt
