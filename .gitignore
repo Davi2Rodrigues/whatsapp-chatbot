@@ -3,5 +3,9 @@ node_modules
 .env
 .git
 .gitignore
+.session/
+.auth/
 wwebjs_auth/
 node_modules/
+.wwebjs_auth/
+*.log.cache/

@@ -15,16 +15,15 @@
   },
   "dependencies": {
     "axios": "^1.10.0",
-    "dotenv": "^16.4.1",
-    "express": "^4.21.2",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
     "moment-timezone": "^0.6.0",
-    "puppeteer": "^19.0.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
     "puppeteer-extra-plugin-user-data-dir": "^2.4.1",
     "puppeteer-extra-plugin-user-preferences": "^2.4.1",
     "qrcode-terminal": "^0.12.0",
-    "whatsapp-web.js": "^1.24.2"
+    "whatsapp-web.js": "^1.31.0"
   },
   "engines": {
     "node": ">=18.x",
@@ -37,5 +36,9 @@
   "bugs": {
     "url": "https://github.com/davy7x/testechatbot/issues"
   },
-  "homepage": "https://github.com/davy7x/testechatbot#readme"
+  "homepage": "https://github.com/davy7x/testechatbot#readme",
+  "devDependencies": {
+    "@nesk/puphpeteer": "^2.0.0",
+    "puppeteer": "^24.15.0"
+  }
 }
